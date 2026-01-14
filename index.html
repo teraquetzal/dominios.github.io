@@ -65,136 +65,53 @@
 
     <script>
         const ID_EXTENS_METADATA = "com.mi-hoja-srd.data";
-        const ACTION_ID = "com.mi-hoja-srd.action";
-        let currentTokenId = null;
+const ACTION_ID = "com.mi-hoja-srd.action";
+let currentTokenId = null;
 
-        OBR.onReady(async () => {
-            // --- TRUCO: Detectar si estamos en el Popover o en Background ---
-            const queryString = window.location.search;
-            const urlParams = new URLSearchParams(queryString);
-            const isPopover = urlParams.get('popover') === 'true';
+OBR.onReady(async () => {
+    // 1. Verificar si estamos en el Popover o en el fondo
+    const isPopover = window.location.search.includes('popover=true');
 
-            if (isPopover) {
-                // MODO VISTA: Mostrar la hoja y activar listeners
-                document.body.classList.add("ready");
-                initSheetLogic();
-            } else {
-                // MODO FONDO: Crear el botón en la barra de herramientas
-                OBR.tool.create({
-                    id: ACTION_ID,
-                    icons: [
-                        {
-                            icon: "https://img.icons8.com/ios-filled/50/ffffff/dungeons-and-dragons.png",
-                            label: "Hoja SRD",
-                        },
-                    ],
-                    onClick: (_, elementId) => {
-                        OBR.popover.open({
-                            id: "com.mi-hoja-srd.popover",
-                            url: window.location.pathname + "?popover=true", // Abrimos este mismo archivo pero en modo popover
-                            height: 500,
-                            width: 320,
-                            anchorElementId: elementId,
-                        });
-                    },
+    if (isPopover) {
+        document.body.style.opacity = "1";
+        initSheetLogic();
+    } else {
+        // 2. REGISTRAR LA ACCIÓN (Esto crea el botón)
+        OBR.action.create({
+            id: ACTION_ID,
+            icons: [
+                {
+                    icon: "https://img.icons8.com/ios-filled/50/ffffff/dungeons-and-dragons.png",
+                    label: "Hoja SRD",
+                },
+            ],
+            onClick: () => {
+                OBR.popover.open({
+                    id: "com.mi-hoja-srd.popover",
+                    url: window.location.pathname + "?popover=true",
+                    height: 500,
+                    width: 320,
                 });
-            }
+            },
         });
+    }
+});
 
-        // --- LÓGICA DE LA HOJA ---
-        function initSheetLogic() {
-            // 1. Detectar cambios en la selección
-            OBR.player.onChange((player) => {
-                handleSelection(player.selection);
-            });
-
-            // 2. Sincronización Multijugador
-            OBR.scene.items.onChange((items) => {
-                if (!currentTokenId) return;
-                const token = items.find(item => item.id === currentTokenId);
-                if (token && token.metadata[ID_EXTENS_METADATA]) {
-                    updateUI(token.metadata[ID_EXTENS_METADATA]);
-                }
-            });
-            
-            // Inicializar si ya hay algo seleccionado al abrir
-            OBR.player.getSelection().then(selection => handleSelection(selection));
+function initSheetLogic() {
+    OBR.player.onChange((player) => handleSelection(player.selection));
+    OBR.scene.items.onChange((items) => {
+        if (!currentTokenId) return;
+        const token = items.find(item => item.id === currentTokenId);
+        if (token?.metadata[ID_EXTENS_METADATA]) {
+            updateUI(token.metadata[ID_EXTENS_METADATA]);
         }
+    });
+    // Carga inicial
+    OBR.player.getSelection().then(handleSelection);
+}
 
-        async function handleSelection(selection) {
-            if (selection && selection.length > 0) {
-                currentTokenId = selection[0];
-                const items = await OBR.scene.items.getItems([currentTokenId]);
-                const token = items[0];
-                
-                if (token && token.layer === "CHARACTER" || token.layer === "MOUNT") {
-                    document.getElementById('sheet').style.display = 'block';
-                    document.getElementById('no-selection').style.display = 'none';
-                    document.getElementById('token-name').innerText = token.name;
-                    
-                    const metadata = token.metadata[ID_EXTENS_METADATA] || {};
-                    updateUI(metadata);
-                    return;
-                }
-            }
-            // Si no hay selección válida
-            currentTokenId = null;
-            document.getElementById('sheet').style.display = 'none';
-            document.getElementById('no-selection').style.display = 'block';
-        }
-
-        function updateUI(metadata) {
-            document.querySelectorAll('[data-key]').forEach(el => {
-                // No actualizamos si el usuario está escribiendo en ese momento
-                if (document.activeElement !== el) {
-                    const key = el.getAttribute('data-key');
-                    const val = getNestedValue(metadata, key);
-                    el.value = val !== undefined ? val : "";
-                }
-            });
-        }
-
-        // --- GUARDADO DE DATOS (OPTIMIZADO) ---
-        
-        async function saveData(key, value) {
-            if (!currentTokenId) return;
-            await OBR.scene.items.updateItems([currentTokenId], (items) => {
-                for (let item of items) {
-                    if (!item.metadata[ID_EXTENS_METADATA]) {
-                        item.metadata[ID_EXTENS_METADATA] = {};
-                    }
-                    setNestedValue(item.metadata[ID_EXTENS_METADATA], key, value);
-                }
-            });
-        }
-
-        // Usamos 'change' para inputs numéricos (se guarda al perder foco o enter)
-        document.querySelectorAll('input[data-key]').forEach(input => {
-            input.addEventListener('change', (e) => {
-                saveData(e.target.getAttribute('data-key'), e.target.value);
-            });
-        });
-
-        // Usamos debounce para el textarea (notas)
-        let timeout = null;
-        document.querySelector('textarea').addEventListener('input', (e) => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                saveData(e.target.getAttribute('data-key'), e.target.value);
-            }, 500); // Espera 500ms después de dejar de escribir para guardar
-        });
-
-        // Utilidades
-        function getNestedValue(obj, path) {
-            return path.split('.').reduce((prev, curr) => prev && prev[curr], obj);
-        }
-
-        function setNestedValue(obj, path, value) {
-            const keys = path.split('.');
-            const lastKey = keys.pop();
-            const lastObj = keys.reduce((prev, curr) => prev[curr] = prev[curr] || {}, obj);
-            lastObj[lastKey] = value;
-        }
+// ... (Mantén tus funciones handleSelection, updateUI, saveData, etc., igual que antes)
     </script>
 </body>
+
 </html>

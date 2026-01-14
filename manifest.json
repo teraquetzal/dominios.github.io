@@ -6,7 +6,7 @@
   "background_color": "#1a1a1a",
   "action": {
     "title": "Abrir Hoja",
-    "view": "/index.html",
+    "popover": "/index.html",
     "icon": "https://www.owlbear.rodeo/favicon-32x32.png",
     "location": "TOOL",
     "width": 400,

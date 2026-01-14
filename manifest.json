@@ -1,0 +1,20 @@
+{
+  "name": "Hoja de Personaje D&D 2024 Libre",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "description": "Hoja de personaje flexible para D&D 5.5 y contenido Homebrew.",
+  "icon": "https://tu-servidor.com/icon.png",
+  "background_color": "#1a1a1a",
+  "action": {
+    "title": "Abrir Hoja",
+    "icon": "https://tu-servidor.com/icon.png",
+    "popover": "index.html",
+    "width": 400,
+    "height": 600
+  },
+  "permissions": [
+    "SCENE_ITEMS_READ",
+    "SCENE_ITEMS_WRITE",
+    "PLAYER_READ"
+  ]
+}

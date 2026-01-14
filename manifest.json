@@ -10,10 +10,6 @@
     "location": "TOOL",
     "width": 400,
     "height": 600
-  },
-  "permissions": [
-    { "name": "SCENE_ITEMS_READ" },
-    { "name": "SCENE_ITEMS_WRITE" },
-    { "name": "PLAYER_READ" }
-  ]
+  }
 }
+

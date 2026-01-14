@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hoja D&D 2024 - OBR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@owlbear-rodeo/sdk"></script>
+  <style>
+    body { background-color: #1a1a1a; color: #e5e7eb; font-family: sans-serif; }
+    input, textarea { background: #2d2d2d; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; width: 100%; color: white; }
+    input:focus { border-color: #ef4444; outline: none; }
+    .stat-box { text-align: center; background: #262626; border: 2px solid #3f3f46; border-radius: 8px; padding: 5px; }
+    .label { font-size: 0.7rem; text-transform: uppercase; color: #9ca3af; font-weight: bold; }
+  </style>
+</head>
+<body class="p-4">
+
+  <div id="app" class="space-y-4">
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="label">Nombre</label>
+        <input type="text" id="name" placeholder="Nombre del personaje">
+      </div>
+      <div>
+        <label class="label">Clase/Nivel (2024)</label>
+        <input type="text" id="classLevel" placeholder="Ej: Guerrero 1">
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center bg-red-900/20 p-2 rounded-lg border border-red-900/50">
+      <div class="text-center">
+        <label class="label">HP</label>
+        <div class="flex items-center gap-1">
+          <input type="number" id="hpCur" class="w-12 text-center"> / 
+          <input type="number" id="hpMax" class="w-12 text-center">
+        </div>
+      </div>
+      <div class="text-center">
+        <label class="label">AC</label>
+        <input type="number" id="ac" class="w-12 text-center block mx-auto">
+      </div>
+      <div class="text-center">
+        <label class="label">Inspiración</label>
+        <input type="checkbox" id="heroicInspiration" class="w-5 h-5 accent-red-600">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2">
+      <div class="stat-box"><label class="label">STR</label><input type="number" id="str" class="text-center"></div>
+      <div class="stat-box"><label class="label">DEX</label><input type="number" id="dex" class="text-center"></div>
+      <div class="stat-box"><label class="label">CON</label><input type="number" id="con" class="text-center"></div>
+      <div class="stat-box"><label class="label">INT</label><input type="number" id="int" class="text-center"></div>
+      <div class="stat-box"><label class="label">WIS</label><input type="number" id="wis" class="text-center"></div>
+      <div class="stat-box"><label class="label">CHA</label><input type="number" id="cha" class="text-center"></div>
+    </div>
+
+    <div>
+      <label class="label">Weapon Masteries / Habilidades</label>
+      <textarea id="features" rows="4" class="text-sm" placeholder="Escribe aquí cualquier regla oficial o homebrew..."></textarea>
+    </div>
+
+    <div class="text-[10px] text-gray-500 italic">
+      * Los cambios se guardan automáticamente al escribir.
+    </div>
+  </div>
+
+  <script>
+    const OBR = window.OBR;
+    const ID = "com.tu-hoja.dnd2024";
+    let currentTokenId = null;
+
+    // Inicializar OBR
+    OBR.onReady(async () => {
+      // Intentar obtener el token seleccionado al abrir
+      const selection = await OBR.player.getSelection();
+      if (selection && selection.length > 0) {
+        setupSheet(selection[0]);
+      } else {
+        document.body.innerHTML = "<p class='text-center mt-10'>Selecciona un token en el mapa para ver su hoja.</p>";
+      }
+    });
+
+    function setupSheet(tokenId) {
+      currentTokenId = tokenId;
+      
+      // 1. Cargar datos iniciales
+      loadData();
+
+      // 2. Escuchar cambios en el mapa (por si el GM edita el token)
+      OBR.scene.items.onChange((items) => {
+        const token = items.find(i => i.id === currentTokenId);
+        if (token) updateUI(token.metadata[ID]);
+      });
+
+      // 3. Configurar guardado automático (Debounce)
+      const inputs = document.querySelectorAll('input, textarea');
+      inputs.forEach(input => {
+        input.addEventListener('input', () => {
+          saveData();
+        });
+      });
+    }
+
+    async function loadData() {
+      const items = await OBR.scene.items.getItems([currentTokenId]);
+      if (items.length > 0) {
+        updateUI(items[0].metadata[ID]);
+      }
+    }
+
+    function updateUI(data) {
+      if (!data) return;
+      document.getElementById('name').value = data.name || "";
+      document.getElementById('classLevel').value = data.classLevel || "";
+      document.getElementById('hpCur').value = data.hpCur || 0;
+      document.getElementById('hpMax').value = data.hpMax || 0;
+      document.getElementById('ac').value = data.ac || 10;
+      document.getElementById('heroicInspiration').checked = data.heroicInspiration || false;
+      document.getElementById('str').value = data.str || 10;
+      document.getElementById('dex').value = data.dex || 10;
+      document.getElementById('con').value = data.con || 10;
+      document.getElementById('int').value = data.int || 10;
+      document.getElementById('wis').value = data.wis || 10;
+      document.getElementById('cha').value = data.cha || 10;
+      document.getElementById('features').value = data.features || "";
+    }
+
+    async function saveData() {
+      const data = {
+        name: document.getElementById('name').value,
+        classLevel: document.getElementById('classLevel').value,
+        hpCur: document.getElementById('hpCur').value,
+        hpMax: document.getElementById('hpMax').value,
+        ac: document.getElementById('ac').value,
+        heroicInspiration: document.getElementById('heroicInspiration').checked,
+        str: document.getElementById('str').value,
+        dex: document.getElementById('dex').value,
+        con: document.getElementById('con').value,
+        int: document.getElementById('int').value,
+        wis: document.getElementById('wis').value,
+        cha: document.getElementById('cha').value,
+        features: document.getElementById('features').value,
+      };
+
+      await OBR.scene.items.updateItems([currentTokenId], (items) => {
+        for (let item of items) {
+          item.metadata[ID] = data;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

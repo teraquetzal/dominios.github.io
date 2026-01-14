@@ -3,6 +3,5 @@
   "version": "1.0.0",
   "manifest_version": 1,
   "description": "Hoja de personaje flexible para D&D.",
-  "icon": "https://img.icons8.com/ios-filled/50/ffffff/dungeons-and-dragons.png",
-  "background_color": "#2c2f33"
+  "icon": "https://img.icons8.com/ios-filled/50/ffffff/dungeons-and-dragons.png"
 }

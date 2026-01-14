@@ -1,154 +1,111 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hoja D&D 2024 - OBR</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/@owlbear-rodeo/sdk"></script>
-  <style>
-    body { background-color: #1a1a1a; color: #e5e7eb; font-family: sans-serif; }
-    input, textarea { background: #2d2d2d; border: 1px solid #444; border-radius: 4px; padding: 4px 8px; width: 100%; color: white; }
-    input:focus { border-color: #ef4444; outline: none; }
-    .stat-box { text-align: center; background: #262626; border: 2px solid #3f3f46; border-radius: 8px; padding: 5px; }
-    .label { font-size: 0.7rem; text-transform: uppercase; color: #9ca3af; font-weight: bold; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja SRD 5.2.1</title>
+    <script src="https://unpkg.com/@owlbear-rodeo/sdk@latest/dist/obr.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #2c2f33; color: white; padding: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-box { background: #23272a; padding: 5px; border-radius: 5px; text-align: center; border: 1px solid #7289da; }
+        .stat-box label { font-size: 0.7rem; color: #99aab5; display: block; text-transform: uppercase; }
+        input { width: 80%; background: transparent; border: none; border-bottom: 1px solid #7289da; color: white; text-align: center; font-size: 1.2rem; }
+        textarea { width: 100%; background: #23272a; color: white; border: 1px solid #444; border-radius: 4px; height: 80px; resize: none; }
+        h3 { border-bottom: 2px solid #7289da; padding-bottom: 5px; font-size: 1rem; }
+        #token-name { font-weight: bold; color: #7289da; }
+    </style>
 </head>
-<body class="p-4">
+<body>
 
-  <div id="app" class="space-y-4">
-    <div class="grid grid-cols-2 gap-2">
-      <div>
-        <label class="label">Nombre</label>
-        <input type="text" id="name" placeholder="Nombre del personaje">
-      </div>
-      <div>
-        <label class="label">Clase/Nivel (2024)</label>
-        <input type="text" id="classLevel" placeholder="Ej: Guerrero 1">
-      </div>
-    </div>
+    <div id="no-selection">Selecciona un token para ver su hoja.</div>
 
-    <div class="flex justify-between items-center bg-red-900/20 p-2 rounded-lg border border-red-900/50">
-      <div class="text-center">
-        <label class="label">HP</label>
-        <div class="flex items-center gap-1">
-          <input type="number" id="hpCur" class="w-12 text-center"> / 
-          <input type="number" id="hpMax" class="w-12 text-center">
+    <div id="sheet" style="display: none;">
+        <h3>Hoja de: <span id="token-name"></span></h3>
+        
+        <div class="grid">
+            <div class="stat-box"><label>Fuerza</label><input type="number" id="str" data-key="stats.str"></div>
+            <div class="stat-box"><label>Destreza</label><input type="number" id="dex" data-key="stats.dex"></div>
+            <div class="stat-box"><label>Constitución</label><input type="number" id="con" data-key="stats.con"></div>
+            <div class="stat-box"><label>Inteligencia</label><input type="number" id="int" data-key="stats.int"></div>
+            <div class="stat-box"><label>Sabiduría</label><input type="number" id="wis" data-key="stats.wis"></div>
+            <div class="stat-box"><label>Carisma</label><input type="number" id="cha" data-key="stats.cha"></div>
         </div>
-      </div>
-      <div class="text-center">
-        <label class="label">AC</label>
-        <input type="number" id="ac" class="w-12 text-center block mx-auto">
-      </div>
-      <div class="text-center">
-        <label class="label">Inspiración</label>
-        <input type="checkbox" id="heroicInspiration" class="w-5 h-5 accent-red-600">
-      </div>
+
+        <div class="grid">
+            <div class="stat-box"><label>Vida (PG)</label><input type="number" id="hp" data-key="hp"></div>
+            <div class="stat-box"><label>CA</label><input type="number" id="ac" data-key="ac"></div>
+            <div class="stat-box"><label>Iniciativa</label><input type="number" id="init" data-key="init"></div>
+        </div>
+
+        <h3>Rasgos y Equipo</h3>
+        <textarea id="notes" data-key="notes" placeholder="Escribe aquí los rasgos del SRD o equipo..."></textarea>
     </div>
 
-    <div class="grid grid-cols-3 gap-2">
-      <div class="stat-box"><label class="label">STR</label><input type="number" id="str" class="text-center"></div>
-      <div class="stat-box"><label class="label">DEX</label><input type="number" id="dex" class="text-center"></div>
-      <div class="stat-box"><label class="label">CON</label><input type="number" id="con" class="text-center"></div>
-      <div class="stat-box"><label class="label">INT</label><input type="number" id="int" class="text-center"></div>
-      <div class="stat-box"><label class="label">WIS</label><input type="number" id="wis" class="text-center"></div>
-      <div class="stat-box"><label class="label">CHA</label><input type="number" id="cha" class="text-center"></div>
-    </div>
+    <script>
+        const ID_EXTENS_METADATA = "com.mi-hoja-srd.data";
+        let currentTokenId = null;
 
-    <div>
-      <label class="label">Weapon Masteries / Habilidades</label>
-      <textarea id="features" rows="4" class="text-sm" placeholder="Escribe aquí cualquier regla oficial o homebrew..."></textarea>
-    </div>
-
-    <div class="text-[10px] text-gray-500 italic">
-      * Los cambios se guardan automáticamente al escribir.
-    </div>
-  </div>
-
-  <script>
-    const OBR = window.OBR;
-    const ID = "com.tu-hoja.dnd2024";
-    let currentTokenId = null;
-
-    // Inicializar OBR
-    OBR.onReady(async () => {
-      // Intentar obtener el token seleccionado al abrir
-      const selection = await OBR.player.getSelection();
-      if (selection && selection.length > 0) {
-        setupSheet(selection[0]);
-      } else {
-        document.body.innerHTML = "<p class='text-center mt-10'>Selecciona un token en el mapa para ver su hoja.</p>";
-      }
-    });
-
-    function setupSheet(tokenId) {
-      currentTokenId = tokenId;
-      
-      // 1. Cargar datos iniciales
-      loadData();
-
-      // 2. Escuchar cambios en el mapa (por si el GM edita el token)
-      OBR.scene.items.onChange((items) => {
-        const token = items.find(i => i.id === currentTokenId);
-        if (token) updateUI(token.metadata[ID]);
-      });
-
-      // 3. Configurar guardado automático (Debounce)
-      const inputs = document.querySelectorAll('input, textarea');
-      inputs.forEach(input => {
-        input.addEventListener('input', () => {
-          saveData();
+        OBR.onReady(async () => {
+            // 1. Detectar cambios en la selección
+            OBR.player.onChange((player) => {
+                const selection = player.selection;
+                if (selection && selection.length > 0) {
+                    setupSheet(selection[0]);
+                } else {
+                    document.getElementById('sheet').style.display = 'none';
+                    document.getElementById('no-selection').style.display = 'block';
+                }
+            });
         });
-      });
-    }
 
-    async function loadData() {
-      const items = await OBR.scene.items.getItems([currentTokenId]);
-      if (items.length > 0) {
-        updateUI(items[0].metadata[ID]);
-      }
-    }
+        async function setupSheet(tokenId) {
+            currentTokenId = tokenId;
+            const items = await OBR.scene.items.getItems([tokenId]);
+            const token = items[0];
 
-    function updateUI(data) {
-      if (!data) return;
-      document.getElementById('name').value = data.name || "";
-      document.getElementById('classLevel').value = data.classLevel || "";
-      document.getElementById('hpCur').value = data.hpCur || 0;
-      document.getElementById('hpMax').value = data.hpMax || 0;
-      document.getElementById('ac').value = data.ac || 10;
-      document.getElementById('heroicInspiration').checked = data.heroicInspiration || false;
-      document.getElementById('str').value = data.str || 10;
-      document.getElementById('dex').value = data.dex || 10;
-      document.getElementById('con').value = data.con || 10;
-      document.getElementById('int').value = data.int || 10;
-      document.getElementById('wis').value = data.wis || 10;
-      document.getElementById('cha').value = data.cha || 10;
-      document.getElementById('features').value = data.features || "";
-    }
+            if (!token) return;
 
-    async function saveData() {
-      const data = {
-        name: document.getElementById('name').value,
-        classLevel: document.getElementById('classLevel').value,
-        hpCur: document.getElementById('hpCur').value,
-        hpMax: document.getElementById('hpMax').value,
-        ac: document.getElementById('ac').value,
-        heroicInspiration: document.getElementById('heroicInspiration').checked,
-        str: document.getElementById('str').value,
-        dex: document.getElementById('dex').value,
-        con: document.getElementById('con').value,
-        int: document.getElementById('int').value,
-        wis: document.getElementById('wis').value,
-        cha: document.getElementById('cha').value,
-        features: document.getElementById('features').value,
-      };
+            document.getElementById('sheet').style.display = 'block';
+            document.getElementById('no-selection').style.display = 'none';
+            document.getElementById('token-name').innerText = token.name;
 
-      await OBR.scene.items.updateItems([currentTokenId], (items) => {
-        for (let item of items) {
-          item.metadata[ID] = data;
+            // Cargar datos guardados en el token
+            const metadata = token.metadata[ID_EXTENS_METADATA] || {};
+            
+            // Llenar los inputs con los datos del metadata
+            document.querySelectorAll('input, textarea').forEach(el => {
+                const key = el.getAttribute('data-key');
+                el.value = getNestedValue(metadata, key) || "";
+            });
         }
-      });
-    }
-  </script>
+
+        // Guardar datos al cambiar cualquier input
+        document.addEventListener('input', async (e) => {
+            if (!currentTokenId || !e.target.dataset.key) return;
+
+            const key = e.target.dataset.key;
+            const value = e.target.value;
+
+            await OBR.scene.items.updateItems([currentTokenId], (items) => {
+                for (let item of items) {
+                    if (!item.metadata[ID_EXTENS_METADATA]) item.metadata[ID_EXTENS_METADATA] = {};
+                    setNestedValue(item.metadata[ID_EXTENS_METADATA], key, value);
+                }
+            });
+        });
+
+        // Funciones auxiliares para manejar objetos anidados (ej: stats.str)
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((prev, curr) => prev && prev[curr], obj);
+        }
+
+        function setNestedValue(obj, path, value) {
+            const keys = path.split('.');
+            const lastKey = keys.pop();
+            const lastObj = keys.reduce((prev, curr) => prev[curr] = prev[curr] || {}, obj);
+            lastObj[lastKey] = value;
+        }
+    </script>
 </body>
 </html>

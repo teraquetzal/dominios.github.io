@@ -1,15 +1,8 @@
 {
-  "name": "Hoja de Personaje D&D 2024 Libre",
+  "name": "Hoja de Personaje SRD",
   "version": "1.0.0",
   "manifest_version": 1,
-  "description": "Hoja de personaje flexible para D&D 5.5 y contenido Homebrew.",
-  "background_color": "#1a1a1a",
-  "action": {
-    "title": "Abrir Hoja",
-    "popover": "/index.html",
-    "icon": "https://www.owlbear.rodeo/favicon-32x32.png",
-    "location": "TOOL",
-    "width": 400,
-    "height": 600
-  }
+  "description": "Hoja de personaje flexible para D&D.",
+  "icon": "https://img.icons8.com/ios-filled/50/ffffff/dungeons-and-dragons.png",
+  "background_color": "#2c2f33"
 }

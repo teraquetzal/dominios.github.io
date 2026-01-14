@@ -6,35 +6,16 @@
     <title>Hoja SRD 5.2.1</title>
     <script src="https://unpkg.com/@owlbear-rodeo/sdk@latest/dist/obr.js"></script>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #2c2f33; 
-            color: white; 
-            padding: 10px; 
-            box-sizing: border-box; 
-            /* Ocultamos el body por defecto para evitar parpadeos */
-            opacity: 0; 
-            transition: opacity 0.3s ease;
-        }
-        /* Solo mostramos el contenido si estamos en modo popover */
-        body.ready { opacity: 1; }
-
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #2c2f33; color: white; padding: 10px; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         .stat-box { background: #23272a; padding: 5px; border-radius: 5px; text-align: center; border: 1px solid #7289da; }
         .stat-box label { font-size: 0.65rem; color: #99aab5; display: block; text-transform: uppercase; margin-bottom: 2px;}
-        
         input { width: 100%; box-sizing: border-box; background: transparent; border: none; border-bottom: 1px solid #444; color: white; text-align: center; font-size: 1.1rem; padding: 2px; }
-        input:focus { outline: none; border-bottom: 1px solid #7289da; background: rgba(114, 137, 218, 0.1); }
-        /* Quitamos las flechas de los input number */
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
-
+        input:focus { outline: none; border-bottom: 1px solid #7289da; }
         textarea { width: 100%; box-sizing: border-box; background: #23272a; color: white; border: 1px solid #444; border-radius: 4px; height: 120px; resize: vertical; padding: 5px; font-family: inherit;}
-        textarea:focus { outline: none; border-color: #7289da; }
-
-        h3 { border-bottom: 2px solid #7289da; padding-bottom: 5px; font-size: 1rem; margin-top: 5px; color: #fff; }
+        h3 { border-bottom: 2px solid #7289da; padding-bottom: 5px; font-size: 1rem; margin-top: 5px; }
         #token-name { font-weight: bold; color: #7289da; }
-        #no-selection { text-align: center; margin-top: 50px; color: #99aab5; font-style: italic; }
+        #no-selection { text-align: center; margin-top: 50px; color: #99aab5; }
     </style>
 </head>
 <body>
@@ -43,7 +24,6 @@
 
     <div id="sheet" style="display: none;">
         <h3><span id="token-name"></span></h3>
-        
         <div class="grid">
             <div class="stat-box"><label>FUE</label><input type="number" data-key="stats.str"></div>
             <div class="stat-box"><label>DES</label><input type="number" data-key="stats.dex"></div>
@@ -52,66 +32,127 @@
             <div class="stat-box"><label>SAB</label><input type="number" data-key="stats.wis"></div>
             <div class="stat-box"><label>CAR</label><input type="number" data-key="stats.cha"></div>
         </div>
-
         <div class="grid">
             <div class="stat-box"><label>PG</label><input type="number" data-key="hp"></div>
             <div class="stat-box"><label>CA</label><input type="number" data-key="ac"></div>
             <div class="stat-box"><label>Iniciativa</label><input type="number" data-key="init"></div>
         </div>
-
         <h3>Rasgos y Equipo</h3>
         <textarea id="notes" data-key="notes" placeholder="Notas, hechizos, inventario..."></textarea>
     </div>
 
     <script>
         const ID_EXTENS_METADATA = "com.mi-hoja-srd.data";
-const ACTION_ID = "com.mi-hoja-srd.action";
-let currentTokenId = null;
+        const ACTION_ID = "com.mi-hoja-srd.action";
+        let currentTokenId = null;
 
-OBR.onReady(async () => {
-    // 1. Verificar si estamos en el Popover o en el fondo
-    const isPopover = window.location.search.includes('popover=true');
+        // ESTO SE EJECUTA SIEMPRE AL CARGAR LA ESCENA
+        OBR.onReady(async () => {
+            console.log("SDK de Owlbear detectado y listo.");
 
-    if (isPopover) {
-        document.body.style.opacity = "1";
-        initSheetLogic();
-    } else {
-        // 2. REGISTRAR LA ACCIÓN (Esto crea el botón)
-        OBR.action.create({
-            id: ACTION_ID,
-            icons: [
-                {
-                    icon: "https://img.icons8.com/ios-filled/50/ffffff/dungeons-and-dragons.png",
-                    label: "Hoja SRD",
-                },
-            ],
-            onClick: () => {
-                OBR.popover.open({
-                    id: "com.mi-hoja-srd.popover",
-                    url: window.location.pathname + "?popover=true",
-                    height: 500,
-                    width: 320,
+            // Detectar si estamos en modo Popover (ventana abierta) o Background (registro de botón)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('popover') === 'true') {
+                // MODO HOJA: Si la ventana ya está abierta, activamos la lógica de la hoja
+                initSheetLogic();
+            } else {
+                // MODO REGISTRO: Creamos el botón en la interfaz de Owlbear
+                OBR.action.create({
+                    id: ACTION_ID,
+                    icons: [{
+                        icon: "https://img.icons8.com/ios-filled/50/ffffff/dungeons-and-dragons.png",
+                        label: "Hoja SRD",
+                    }],
+                    onClick: () => {
+                        // Al hacer clic, abre este mismo archivo pero con el parámetro ?popover=true
+                        OBR.popover.open({
+                            id: "com.mi-hoja-srd.popover",
+                            url: window.location.href + "?popover=true",
+                            height: 500,
+                            width: 350,
+                        });
+                    },
                 });
-            },
+            }
         });
-    }
-});
 
-function initSheetLogic() {
-    OBR.player.onChange((player) => handleSelection(player.selection));
-    OBR.scene.items.onChange((items) => {
-        if (!currentTokenId) return;
-        const token = items.find(item => item.id === currentTokenId);
-        if (token?.metadata[ID_EXTENS_METADATA]) {
-            updateUI(token.metadata[ID_EXTENS_METADATA]);
+        function initSheetLogic() {
+            // Escuchar selección de tokens
+            OBR.player.onChange((player) => {
+                handleSelection(player.selection);
+            });
+
+            // Escuchar cambios en los items de la escena (sincronización)
+            OBR.scene.items.onChange((items) => {
+                if (!currentTokenId) return;
+                const token = items.find(item => item.id === currentTokenId);
+                if (token && token.metadata[ID_EXTENS_METADATA]) {
+                    updateUI(token.metadata[ID_EXTENS_METADATA]);
+                }
+            });
+
+            // Cargar selección inicial si ya hay algo marcado
+            OBR.player.getSelection().then(handleSelection);
         }
-    });
-    // Carga inicial
-    OBR.player.getSelection().then(handleSelection);
-}
 
-// ... (Mantén tus funciones handleSelection, updateUI, saveData, etc., igual que antes)
+        async function handleSelection(selection) {
+            if (selection && selection.length > 0) {
+                currentTokenId = selection[0];
+                const items = await OBR.scene.items.getItems([currentTokenId]);
+                const token = items[0];
+                
+                if (token) {
+                    document.getElementById('sheet').style.display = 'block';
+                    document.getElementById('no-selection').style.display = 'none';
+                    document.getElementById('token-name').innerText = token.name;
+                    updateUI(token.metadata[ID_EXTENS_METADATA] || {});
+                }
+            } else {
+                currentTokenId = null;
+                document.getElementById('sheet').style.display = 'none';
+                document.getElementById('no-selection').style.display = 'block';
+            }
+        }
+
+        function updateUI(metadata) {
+            document.querySelectorAll('[data-key]').forEach(el => {
+                if (document.activeElement !== el) {
+                    const key = el.getAttribute('data-key');
+                    const val = getNestedValue(metadata, key);
+                    el.value = val !== undefined ? val : "";
+                }
+            });
+        }
+
+        // GUARDADO DE DATOS
+        document.querySelectorAll('[data-key]').forEach(input => {
+            input.addEventListener('change', async (e) => {
+                if (!currentTokenId) return;
+                const key = e.target.getAttribute('data-key');
+                const value = e.target.value;
+
+                await OBR.scene.items.updateItems([currentTokenId], (items) => {
+                    for (let item of items) {
+                        if (!item.metadata[ID_EXTENS_METADATA]) {
+                            item.metadata[ID_EXTENS_METADATA] = {};
+                        }
+                        setNestedValue(item.metadata[ID_EXTENS_METADATA], key, value);
+                    }
+                });
+            });
+        });
+
+        // Utilidades
+        function getNestedValue(obj, path) {
+            return path.split('.').reduce((prev, curr) => prev && prev[curr], obj);
+        }
+        function setNestedValue(obj, path, value) {
+            const keys = path.split('.');
+            const lastKey = keys.pop();
+            const lastObj = keys.reduce((prev, curr) => prev[curr] = prev[curr] || {}, obj);
+            lastObj[lastKey] = value;
+        }
     </script>
 </body>
-
 </html>
+
